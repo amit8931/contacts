@@ -13,8 +13,8 @@ class GroupFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->unique()->words(2, true),
-            'color' => fake()->randomElement(['#a855f7', '#3b82f6', '#10b981', '#f59e0b', '#ef4444']),
+            'name' => $this->faker->unique()->words(2, true),
+            'color' => $this->faker->randomElement(['#a855f7', '#3b82f6', '#10b981', '#f59e0b', '#ef4444']),
         ];
     }
 }

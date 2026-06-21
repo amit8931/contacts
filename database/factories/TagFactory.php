@@ -13,11 +13,11 @@ class TagFactory extends Factory
 {
     public function definition(): array
     {
-        $name = fake()->unique()->word();
+        $name = $this->faker->unique()->word();
         return [
             'name' => $name,
             'slug' => Str::slug($name),
-            'color' => fake()->randomElement(['violet', 'blue', 'emerald', 'amber', 'rose']),
+            'color' => $this->faker->randomElement(['violet', 'blue', 'emerald', 'amber', 'rose']),
         ];
     }
 }

@@ -15,20 +15,20 @@ class ContactFactory extends Factory
         $stages = ['lead', 'customer', 'partner', 'vendor', 'prospect'];
 
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'phone' => fake()->e164PhoneNumber(),
-            'company' => fake()->company(),
-            'job_title' => fake()->jobTitle(),
-            'website' => fake()->url(),
-            'address' => fake()->address(),
-            'birthday' => fake()->optional(0.4)->dateTimeBetween('-60 years', '-20 years'),
-            'lifecycle_stage' => fake()->randomElement($stages),
-            'facebook' => fake()->optional(0.3)->userName(),
-            'twitter' => fake()->optional(0.3)->userName(),
-            'linkedin' => fake()->optional(0.5)->userName(),
-            'notes' => fake()->optional(0.6)->paragraph(),
-            'last_contacted_at' => fake()->optional(0.7)->dateTimeBetween('-90 days', 'now'),
+            'name' => $this->faker->name(),
+            'email' => $this->faker->unique()->safeEmail(),
+            'phone' => $this->faker->e164PhoneNumber(),
+            'company' => $this->faker->company(),
+            'job_title' => $this->faker->jobTitle(),
+            'website' => $this->faker->url(),
+            'address' => $this->faker->address(),
+            'birthday' => $this->faker->optional(0.4)->dateTimeBetween('-60 years', '-20 years'),
+            'lifecycle_stage' => $this->faker->randomElement($stages),
+            'facebook' => $this->faker->optional(0.3)->userName(),
+            'twitter' => $this->faker->optional(0.3)->userName(),
+            'linkedin' => $this->faker->optional(0.5)->userName(),
+            'notes' => $this->faker->optional(0.6)->paragraph(),
+            'last_contacted_at' => $this->faker->optional(0.7)->dateTimeBetween('-90 days', 'now'),
         ];
     }
 }
