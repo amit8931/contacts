@@ -53,7 +53,7 @@
     </x-ui.card>
 
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-8">
-        <span class="text-xs text-muted-foreground">By continuing you agree to the Envato license bundled with this product.</span>
+        <span class="text-xs text-muted-foreground"></span>
         <a href="{{ route('install.requirements') }}"
            class="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-md text-base font-medium bg-gradient-to-br from-primary to-fuchsia-500 text-white shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all">
             Let's go

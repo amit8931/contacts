@@ -45,7 +45,7 @@ class ContactsController extends Controller
         $teamId = $user->current_team_id;
 
         $isRestricted = $user->isClerk() || $user->isManager();
-        $perPage      = $user->isClerk() ? 10 : ($user->isManager() ? 20 : 25);
+        $perPage      = $isRestricted ? 20 : 25;
 
         $query = Contact::where('team_id', $teamId)->with(['group', 'tags', 'owner']);
 

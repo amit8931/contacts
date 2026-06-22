@@ -16,34 +16,39 @@ class UsersController extends Controller
 {
     /**
      * Roles the current user is allowed to assign.
-     * Super Admin: any role. Admin: only Manager and Clerk (cannot create admins).
+     * Super Admin: any role. Admin: Manager + Clerk. Manager: Clerk only.
      */
     private function allowedRoles(): array
     {
-        return Auth::user()->isSuperAdmin()
-            ? Roles::ALL
-            : [Roles::MANAGER, Roles::CLERK];
+        $actor = Auth::user();
+        if ($actor->isSuperAdmin()) return Roles::ALL;
+        if ($actor->isAdmin())      return [Roles::MANAGER, Roles::CLERK];
+        return [Roles::CLERK]; // Manager can only create Clerks
     }
 
     /**
      * Super Admin can act on anyone.
-     * Admin can only act on Manager and Clerk accounts
-     * (cannot edit/delete other Admins or Super Admins).
+     * Admin can only act on Manager and Clerk accounts.
+     * Manager can only act on Clerk accounts.
      */
     private function canActOn(User $target): bool
     {
-        if (Auth::user()->isSuperAdmin()) return true;
-
-        return $target->hasRole(Roles::MANAGER, Roles::CLERK);
+        $actor = Auth::user();
+        if ($actor->isSuperAdmin()) return true;
+        if ($actor->isAdmin())      return $target->hasRole(Roles::MANAGER, Roles::CLERK);
+        return $target->hasRole(Roles::CLERK); // Manager only manages Clerks
     }
 
     public function index(): View
     {
         Gate::authorize('manage-users');
 
-        // Super Admin sees everyone. Admin sees only Manager + Clerk accounts.
+        $actor = Auth::user();
         $query = User::orderBy('name');
-        if (! Auth::user()->isSuperAdmin()) {
+
+        if ($actor->isManager()) {
+            $query->where('role', Roles::CLERK);
+        } elseif (! $actor->isSuperAdmin()) {
             $query->whereIn('role', [Roles::MANAGER, Roles::CLERK]);
         }
 

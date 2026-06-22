@@ -48,9 +48,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::before(fn (User $user) => $user->isSuperAdmin() ? true : null);
 
         // ── Users management ─────────────────────────────────────────────
-        // Super Admin + Admin can manage users.
+        // Super Admin + Admin + Manager can manage users.
+        // (Manager is restricted to Clerk accounts only in UsersController.)
         Gate::define('manage-users', fn (User $user) =>
-            $user->hasRole(Roles::SUPER_ADMIN, Roles::ADMIN)
+            $user->hasRole(Roles::SUPER_ADMIN, Roles::ADMIN, Roles::MANAGER)
         );
 
         // ── Site settings — Super Admin + Admin ───────────────────────────

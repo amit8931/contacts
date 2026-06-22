@@ -75,7 +75,7 @@
             <x-ui.card-content class="p-4">
                 <form method="GET" action="{{ route('contacts.index') }}">
                     @if ($isRestricted ?? false)
-                        {{-- Clerk / Manager: number search only --}}
+                        {{-- Clerk / Manager: phone number search only --}}
                         <div class="flex flex-wrap items-center gap-2">
                             <div class="flex-1 min-w-[200px]">
                                 <div class="relative">
@@ -87,13 +87,20 @@
                             @if (request()->filled('number'))
                                 <a href="{{ route('contacts.index') }}" class="text-sm text-muted-foreground hover:text-foreground">Clear</a>
                             @endif
-                            {{-- Quota badge --}}
-                            @if (($user->search_quota ?? 0) > 0)
-                                @php $remaining = max(0, $user->search_quota - $user->searches_used); @endphp
-                                <span class="ml-auto text-xs text-muted-foreground">
-                                    Searches remaining: <strong class="{{ $remaining <= 10 ? 'text-red-600' : 'text-foreground' }}">{{ $remaining }}</strong> / {{ $user->search_quota }}
-                                </span>
-                            @endif
+                            {{-- Search usage counter (always visible for restricted users) --}}
+                            @php
+                                $hasQuota   = ($user->search_quota ?? 0) > 0;
+                                $usedCount  = $user->searches_used ?? 0;
+                                $remaining  = $hasQuota ? max(0, $user->search_quota - $usedCount) : null;
+                                $isLow      = $hasQuota && $remaining <= 10;
+                            @endphp
+                            <span class="ml-auto text-xs text-muted-foreground">
+                                Searches used: <strong class="{{ $isLow ? 'text-red-600' : 'text-foreground' }}">{{ $usedCount }}</strong>
+                                @if ($hasQuota)
+                                    / {{ $user->search_quota }}
+                                    &nbsp;·&nbsp; Remaining: <strong class="{{ $isLow ? 'text-red-600' : 'text-foreground' }}">{{ $remaining }}</strong>
+                                @endif
+                            </span>
                         </div>
                     @else
                         {{-- Admin / Super Admin: full search --}}
