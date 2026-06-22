@@ -52,6 +52,26 @@
                                 Active (can log in)
                             </label>
                         </div>
+
+                        <div class="space-y-1.5 sm:col-span-2">
+                            <x-ui.label for="search_quota">Search quota <span class="text-xs font-normal text-muted-foreground">(0 = unlimited)</span></x-ui.label>
+                            <div class="flex items-center gap-3">
+                                <x-ui.input id="search_quota" type="number" name="search_quota" value="{{ old('search_quota', $user->search_quota) }}" min="0" class="w-40" />
+                                <span class="text-sm text-muted-foreground">
+                                    Used: <strong class="{{ $user->searches_used >= $user->search_quota && $user->search_quota > 0 ? 'text-red-600' : '' }}">{{ $user->searches_used }}</strong>
+                                    @if ($user->search_quota > 0) / {{ $user->search_quota }} @endif
+                                </span>
+                            </div>
+                            @error('search_quota') <p class="text-xs text-destructive">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div class="space-y-1.5 sm:col-span-2">
+                            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                <input type="checkbox" name="reset_searches" value="1" class="rounded border-input" />
+                                <span>Reset search counter to 0</span>
+                                <span class="text-xs text-muted-foreground">(tick to reset {{ $user->name }}'s used count)</span>
+                            </label>
+                        </div>
                     </div>
 
                     <div class="flex justify-end gap-2 pt-2">

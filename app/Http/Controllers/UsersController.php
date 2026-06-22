@@ -64,18 +64,21 @@ class UsersController extends Controller
         Gate::authorize('manage-users');
 
         $data = $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role'     => ['required', 'in:'.implode(',', $this->allowedRoles())],
+            'name'         => ['required', 'string', 'max:255'],
+            'email'        => ['required', 'email', 'max:255', 'unique:users,email'],
+            'password'     => ['required', 'string', 'min:8', 'confirmed'],
+            'role'         => ['required', 'in:'.implode(',', $this->allowedRoles())],
+            'search_quota' => ['nullable', 'integer', 'min:0'],
         ]);
 
         $user = User::create([
-            'name'      => $data['name'],
-            'email'     => $data['email'],
-            'password'  => Hash::make($data['password']),
-            'role'      => $data['role'],
-            'is_active' => true,
+            'name'         => $data['name'],
+            'email'        => $data['email'],
+            'password'     => Hash::make($data['password']),
+            'role'         => $data['role'],
+            'is_active'    => true,
+            'search_quota' => (int) ($data['search_quota'] ?? 0),
+            'searches_used'=> 0,
         ]);
 
         ActivityLogger::log('user.created', $user, ['name' => $user->name, 'role' => $user->role]);
@@ -98,18 +101,27 @@ class UsersController extends Controller
         abort_unless($this->canActOn($user), 403, 'You cannot edit a Super Admin account.');
 
         $data = $request->validate([
-            'name'      => ['required', 'string', 'max:255'],
-            'email'     => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
-            'role'      => ['required', 'in:'.implode(',', $this->allowedRoles())],
-            'is_active' => ['nullable', 'boolean'],
+            'name'         => ['required', 'string', 'max:255'],
+            'email'        => ['required', 'email', 'max:255', 'unique:users,email,'.$user->id],
+            'role'         => ['required', 'in:'.implode(',', $this->allowedRoles())],
+            'is_active'    => ['nullable', 'boolean'],
+            'search_quota' => ['nullable', 'integer', 'min:0'],
+            'reset_searches' => ['nullable', 'boolean'],
         ]);
 
-        $user->update([
-            'name'      => $data['name'],
-            'email'     => $data['email'],
-            'role'      => $data['role'],
-            'is_active' => (bool) ($data['is_active'] ?? false),
-        ]);
+        $updateData = [
+            'name'         => $data['name'],
+            'email'        => $data['email'],
+            'role'         => $data['role'],
+            'is_active'    => (bool) ($data['is_active'] ?? false),
+            'search_quota' => (int) ($data['search_quota'] ?? 0),
+        ];
+
+        if (!empty($data['reset_searches'])) {
+            $updateData['searches_used'] = 0;
+        }
+
+        $user->update($updateData);
 
         ActivityLogger::log('user.updated', $user, ['name' => $user->name, 'role' => $user->role]);
 

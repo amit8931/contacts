@@ -41,90 +41,63 @@ class ContactsController extends Controller
     {
         Gate::authorize('viewAny', Contact::class);
 
-        $teamId = Auth::user()->current_team_id;
+        $user   = Auth::user();
+        $teamId = $user->current_team_id;
 
-        $query = Contact::where('team_id', $teamId)
-            ->with(['group', 'tags', 'owner']);
+        $isRestricted = $user->isClerk() || $user->isManager();
+        $perPage      = $user->isClerk() ? 10 : ($user->isManager() ? 20 : 25);
 
-        // ── Basic search ──────────────────────────────────────────────────
-        if ($q = trim((string) $request->input('q'))) {
-            $query->where(function ($sub) use ($q) {
-                $sub->where('name',    'like', "%{$q}%")
-                    ->orWhere('email',   'like', "%{$q}%")
-                    ->orWhere('phone',   'like', "%{$q}%")
-                    ->orWhere('company', 'like', "%{$q}%")
-                    ->orWhere('city',    'like', "%{$q}%");
-            });
-        }
+        $query = Contact::where('team_id', $teamId)->with(['group', 'tags', 'owner']);
 
-        // ── Number search ─────────────────────────────────────────────────
-        if ($number = trim((string) $request->input('number'))) {
-            $query->where('phone', 'like', "%{$number}%");
-        }
+        $number        = trim((string) $request->input('number'));
+        $quotaExceeded = false;
 
-        // ── Group filter ──────────────────────────────────────────────────
-        if ($groupId = $request->input('group_id')) {
-            $query->where('group_id', $groupId);
-        }
-
-        // ── Tag filter ────────────────────────────────────────────────────
-        if ($tagIds = $request->input('tags')) {
-            foreach ((array) $tagIds as $tagId) {
-                $query->whereHas('tags', fn ($t) => $t->where('tags.id', $tagId));
+        if ($isRestricted) {
+            // ── Clerk / Manager: number search only ───────────────────────
+            if ($number !== '') {
+                // Quota check
+                if ($user->search_quota > 0 && $user->searches_used >= $user->search_quota) {
+                    $quotaExceeded = true;
+                } else {
+                    $user->increment('searches_used');
+                    $query->where('phone', 'like', "%{$number}%");
+                }
+            }
+        } else {
+            // ── Admin / Super Admin: full search ──────────────────────────
+            if ($q = trim((string) $request->input('q'))) {
+                $query->where(function ($sub) use ($q) {
+                    $sub->where('name',    'like', "%{$q}%")
+                        ->orWhere('email',   'like', "%{$q}%")
+                        ->orWhere('phone',   'like', "%{$q}%")
+                        ->orWhere('company', 'like', "%{$q}%")
+                        ->orWhere('city',    'like', "%{$q}%");
+                });
+            }
+            if ($number !== '') {
+                $query->where('phone', 'like', "%{$number}%");
+            }
+            if ($groupId = $request->input('group_id')) {
+                $query->where('group_id', $groupId);
+            }
+            if ($tagIds = $request->input('tags')) {
+                foreach ((array) $tagIds as $tagId) {
+                    $query->whereHas('tags', fn ($t) => $t->where('tags.id', $tagId));
+                }
             }
         }
 
-        // ── Advanced filters ──────────────────────────────────────────────
-        if ($company = trim((string) $request->input('company'))) {
-            $query->where('company', 'like', "%{$company}%");
-        }
-        if ($jobTitle = trim((string) $request->input('job_title'))) {
-            $query->where('job_title', 'like', "%{$jobTitle}%");
-        }
-        if ($city = trim((string) $request->input('city'))) {
-            $query->where('city', 'like', "%{$city}%");
-        }
-        if ($stage = $request->input('lifecycle_stage')) {
-            $query->where('lifecycle_stage', $stage);
-        }
-        if ($ratingMin = $request->input('rating_min')) {
-            $query->where('rating', '>=', (int) $ratingMin);
-        }
-        if ($ratingMax = $request->input('rating_max')) {
-            $query->where('rating', '<=', (int) $ratingMax);
-        }
-        if ($hasPhone = $request->input('has_phone')) {
-            $hasPhone === 'yes'
-                ? $query->whereNotNull('phone')->where('phone', '!=', '')
-                : $query->where(fn ($s) => $s->whereNull('phone')->orWhere('phone', ''));
-        }
-        if ($hasEmail = $request->input('has_email')) {
-            $hasEmail === 'yes'
-                ? $query->whereNotNull('email')->where('email', '!=', '')
-                : $query->where(fn ($s) => $s->whereNull('email')->orWhere('email', ''));
-        }
-        if ($dateFrom = $request->input('date_from')) {
-            $query->whereDate('created_at', '>=', $dateFrom);
-        }
-        if ($dateTo = $request->input('date_to')) {
-            $query->whereDate('created_at', '<=', $dateTo);
-        }
-        if ($lastFrom = $request->input('last_contacted_from')) {
-            $query->whereDate('last_contacted_at', '>=', $lastFrom);
-        }
-        if ($lastTo = $request->input('last_contacted_to')) {
-            $query->whereDate('last_contacted_at', '<=', $lastTo);
-        }
-
-        // By default show only approved contacts. Pending ones go to /contacts/pending.
         $query->where('approval_status', '!=', 'pending');
 
-        $contacts     = $query->orderBy('name')->paginate(25)->withQueryString();
+        $contacts     = $quotaExceeded
+            ? new \Illuminate\Pagination\LengthAwarePaginator([], 0, $perPage, 1)
+            : $query->orderBy('name')->paginate($perPage)->withQueryString();
+
         $groups       = Group::where('team_id', $teamId)->orderBy('name')->get();
         $tags         = Tag::where('team_id', $teamId)->orderBy('name')->get();
-        $pendingCount = Auth::user()->isClerk() ? 0 : Contact::where('team_id', $teamId)->where('approval_status', 'pending')->count();
+        $pendingCount = $user->isClerk() ? 0 : Contact::where('team_id', $teamId)->where('approval_status', 'pending')->count();
 
-        return view('contacts.index', compact('contacts', 'groups', 'tags', 'pendingCount'));
+        return view('contacts.index', compact('contacts', 'groups', 'tags', 'pendingCount', 'quotaExceeded', 'isRestricted', 'user'));
     }
 
     // ------------------------------------------------------------------

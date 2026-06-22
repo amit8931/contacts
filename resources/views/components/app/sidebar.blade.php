@@ -189,5 +189,5 @@ $brand = app(\App\Settings\GeneralSettings::class);
 </nav>
 
 <div class="border-t p-3 text-xs text-muted-foreground">
-    <span class="opacity-70">v2.0</span>
+    <span class="opacity-70">&copy; {{ date('Y') }} {{ $brand->app_name }}</span>
 </div>

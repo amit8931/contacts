@@ -44,11 +44,18 @@
                             </select>
                             @error('role') <p class="text-xs text-destructive">{{ $message }}</p> @enderror
                             <p class="text-xs text-muted-foreground">
-                                <strong>Clerk</strong>: add contacts, trash, add notes, rate only.
-                                <strong>Manager</strong>: full contact management.
-                                <strong>Admin</strong>: contacts + settings.
-                                <strong>Super Admin</strong>: everything including user management.
+                                <strong>Clerk</strong>: number search only, max 10 results.
+                                <strong>Manager</strong>: number search only, max 20 results.
+                                <strong>Admin</strong>: full search, settings access.
+                                <strong>Super Admin</strong>: everything.
                             </p>
+                        </div>
+
+                        <div class="space-y-1.5 sm:col-span-2">
+                            <x-ui.label for="search_quota">Search quota <span class="text-xs font-normal text-muted-foreground">(Clerk &amp; Manager only — 0 = unlimited)</span></x-ui.label>
+                            <x-ui.input id="search_quota" type="number" name="search_quota" value="{{ old('search_quota', 0) }}" min="0" placeholder="0 = unlimited" />
+                            @error('search_quota') <p class="text-xs text-destructive">{{ $message }}</p> @enderror
+                            <p class="text-xs text-muted-foreground">Number of phone searches this user can perform. Set to 0 for unlimited.</p>
                         </div>
                     </div>
 
