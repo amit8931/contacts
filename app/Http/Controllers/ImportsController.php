@@ -193,7 +193,8 @@ class ImportsController extends Controller
 
             foreach ($mapping as $idx => $field) {
                 $value = trim((string) ($row[$idx] ?? ''));
-                if ($value === '') continue;
+                // Treat empty strings and pandas NaN exports as missing
+                if ($value === '' || strtolower($value) === 'nan') continue;
 
                 if ($field === 'tags') {
                     foreach (preg_split('/\s*,\s*/', $value) as $tagName) {
@@ -210,6 +211,11 @@ class ImportsController extends Controller
                 } else {
                     $attrs[$field] = $value;
                 }
+            }
+
+            // Treat names made only of ?, ., spaces as blank (garbage from CSV exports)
+            if (isset($attrs['name']) && preg_match('/^[\?\.\s]+$/', $attrs['name'])) {
+                unset($attrs['name']);
             }
 
             if (empty($attrs['name'])) {
