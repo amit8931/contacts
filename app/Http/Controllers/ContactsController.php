@@ -169,7 +169,7 @@ class ContactsController extends Controller
         }
 
         // Clerk-created contacts require manager approval before becoming active.
-        $approvalStatus = Auth::user()->isClerk() ? 'pending' : 'approved';
+        $approvalStatus = 'approved';
 
         $contact = Contact::create([
             ...$data,
@@ -188,15 +188,8 @@ class ContactsController extends Controller
 
         ActivityLogger::log('contact.created', $contact, ['name' => $contact->name, 'approval' => $approvalStatus]);
 
-        $msg = $approvalStatus === 'pending'
-            ? "{$contact->name} submitted — awaiting manager approval."
-            : "{$contact->name} created.";
-
-        $redirect = $approvalStatus === 'pending'
-            ? redirect()->route('contacts.index')
-            : redirect()->route('contacts.show', $contact);
-
-        return $redirect->with('toast', ['type' => 'success', 'message' => $msg]);
+        return redirect()->route('contacts.index')
+            ->with('toast', ['type' => 'success', 'message' => "{$contact->name} created."]);
     }
 
     // ------------------------------------------------------------------
