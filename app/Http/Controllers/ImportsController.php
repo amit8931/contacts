@@ -23,6 +23,7 @@ class ImportsController extends Controller
         'job_title' => 'Job title',
         'website' => 'Website',
         'address' => 'Address',
+        'city' => 'City',
         'notes' => 'Notes',
         'tags' => 'Tags (comma-separated)',
     ];
@@ -131,6 +132,7 @@ class ImportsController extends Controller
                 str_contains($lower, 'title') || str_contains($lower, 'job') => 'job_title',
                 str_contains($lower, 'web') => 'website',
                 str_contains($lower, 'address') => 'address',
+                str_contains($lower, 'city') || str_contains($lower, 'town') => 'city',
                 str_contains($lower, 'note') => 'notes',
                 str_contains($lower, 'tag') => 'tags',
                 default => '',
