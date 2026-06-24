@@ -279,10 +279,29 @@ class ImportsController extends Controller
         }
         $i = 0;
         while (($r = fgetcsv($handle, escape: '\\')) !== false) {
-            $rows[] = $r;
+            $rows[] = array_map([$this, 'toUtf8'], $r);
             if ($limit && ++$i >= $limit) break;
         }
         fclose($handle);
         return $rows;
+    }
+
+    /** Convert a CSV cell value to valid UTF-8, handling Windows-1252 / Latin-1 files. */
+    protected function toUtf8(?string $value): ?string
+    {
+        if ($value === null) return null;
+
+        // Strip UTF-8 BOM if present on the first cell
+        if (str_starts_with($value, "\xEF\xBB\xBF")) {
+            $value = substr($value, 3);
+        }
+
+        // Already valid UTF-8 — return as-is
+        if (mb_check_encoding($value, 'UTF-8')) {
+            return $value;
+        }
+
+        // Fall back to Windows-1252 → UTF-8 conversion
+        return mb_convert_encoding($value, 'UTF-8', 'Windows-1252');
     }
 }
