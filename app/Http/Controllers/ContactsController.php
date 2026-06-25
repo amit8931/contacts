@@ -61,7 +61,10 @@ class ContactsController extends Controller
                     $quotaExceeded = true;
                 } else {
                     $user->increment('searches_used');
-                    $query->where('phone', 'like', "%{$number}%");
+                    $query->where(function ($q) use ($number) {
+                        $q->where('phone', 'like', "%{$number}%")
+                          ->orWhere('number', 'like', "%{$number}%");
+                    });
                 }
             }
         } else {
@@ -76,7 +79,10 @@ class ContactsController extends Controller
                 });
             }
             if ($number !== '') {
-                $query->where('phone', 'like', "%{$number}%");
+                $query->where(function ($q) use ($number) {
+                    $q->where('phone', 'like', "%{$number}%")
+                      ->orWhere('number', 'like', "%{$number}%");
+                });
             }
             if ($groupId = $request->input('group_id')) {
                 $query->where('group_id', $groupId);
